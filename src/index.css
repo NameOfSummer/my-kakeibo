@@ -1,0 +1,85 @@
+@import "tailwindcss";
+/* デザイン仕様書の本文（"shadow" など）をクラス名として拾わない */
+@source not "../DESIGN.md";
+
+/*
+ * UI フォント（DESIGN.md 3 章: 本文 Noto Sans JP）。fontsource で自前ホストし、使う 400 / 700 だけ読み込む。
+ * 見出しの Roboto は読み込まず、フォールバックの書体で表示する。
+ */
+@import "@fontsource/noto-sans-jp/400.css";
+@import "@fontsource/noto-sans-jp/700.css";
+
+/* DESIGN.md のトークン（2 章の色、6 章の影）。pages-text-masking のツール UI と同じ値 */
+:root {
+  --bg: #f3f5f7;
+  --surface: #e9ecef;
+  --ink: #000000;
+  --sub: #56606a;
+  --faint: #98a1aa;
+  --hi: #ffffff;
+  --lo: rgb(0 0 0 / 0.18);
+  --lo-strong: rgb(0 0 0 / 0.25);
+  --blue: #009be0;
+  --red: #d83f30;
+  --error: var(--red);
+  --focus: var(--blue);
+
+  /* 影（凸: カード・ボタン、凹: 入力欄・押下中） */
+  --card:
+    6px 6px 10px var(--lo), 0 0 4px var(--hi), -3px 0 4px var(--hi),
+    -3px -4px 10px var(--hi);
+  --raised-sm: 3px 3px 6px var(--lo), -2px -2px 5px var(--hi);
+  --inset-sm: inset 2px 2px 4px var(--lo), inset -2px -2px 4px var(--hi);
+  --popover: 8px 8px 20px var(--lo-strong), -4px -4px 12px var(--hi);
+}
+
+@theme inline {
+  --font-sans:
+    "Noto Sans JP", "Helvetica Neue", arial, "Hiragino Kaku Gothic ProN",
+    "Hiragino Sans", meiryo, sans-serif;
+  --font-heading:
+    Roboto, "Noto Sans JP", "Helvetica Neue", arial,
+    "Hiragino Kaku Gothic ProN", "Hiragino Sans", meiryo, sans-serif;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-sub: var(--sub);
+  --color-faint: var(--faint);
+  --color-blue: var(--blue);
+  --color-error: var(--error);
+
+  --shadow-card: var(--card);
+  --shadow-raised-sm: var(--raised-sm);
+  --shadow-inset-sm: var(--inset-sm);
+  --shadow-popover: var(--popover);
+}
+
+@layer base {
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::placeholder {
+    color: var(--faint);
+  }
+
+  :where(button, input, select, a, [tabindex]):focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+}
