@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { upsertById } from "@/lib/collection";
 import * as store from "@/lib/db";
-import type { Category, KakeiboData, Transaction } from "@/lib/types";
+import type {
+  Category,
+  KakeiboData,
+  StoreRule,
+  Transaction,
+} from "@/lib/types";
 
 /** 読み込みの状態 */
 type LoadState =
@@ -17,8 +22,12 @@ export type Kakeibo = {
   clearError: () => void;
   /** 以下の操作は保存できたら true、失敗したら error を設定して false を返す */
   saveTransaction: (t: Transaction) => Promise<boolean>;
+  /** 取り込み用。まとめて保存し、失敗したら 1 件も入れない */
+  addTransactions: (ts: Transaction[]) => Promise<boolean>;
   removeTransaction: (id: string) => Promise<boolean>;
   saveCategory: (c: Category) => Promise<boolean>;
+  saveStoreRule: (r: StoreRule) => Promise<boolean>;
+  removeStoreRule: (id: string) => Promise<boolean>;
   replaceData: (data: KakeiboData) => Promise<boolean>;
 };
 
@@ -100,6 +109,14 @@ export function useKakeibo(): Kakeibo {
         ),
       [write],
     ),
+    addTransactions: useCallback(
+      (ts) =>
+        write(
+          (db) => store.putTransactions(db, ts),
+          (d) => ({ ...d, transactions: [...d.transactions, ...ts] }),
+        ),
+      [write],
+    ),
     removeTransaction: useCallback(
       (id) =>
         write(
@@ -116,6 +133,25 @@ export function useKakeibo(): Kakeibo {
         write(
           (db) => store.putCategory(db, c),
           (d) => ({ ...d, categories: upsertById(d.categories, c) }),
+        ),
+      [write],
+    ),
+    saveStoreRule: useCallback(
+      (r) =>
+        write(
+          (db) => store.putStoreRule(db, r),
+          (d) => ({ ...d, storeRules: upsertById(d.storeRules, r) }),
+        ),
+      [write],
+    ),
+    removeStoreRule: useCallback(
+      (id) =>
+        write(
+          (db) => store.deleteStoreRule(db, id),
+          (d) => ({
+            ...d,
+            storeRules: d.storeRules.filter((r) => r.id !== id),
+          }),
         ),
       [write],
     ),

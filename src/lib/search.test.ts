@@ -15,6 +15,7 @@ const txs = [
   makeTransaction({
     id: "sub",
     categoryId: "old",
+    source: { card: "recruit", storeName: "ＮＥＴＦＬＩＸ．ＣＯＭ" },
     amount: 980,
     date: "2025-06-01",
   }),
@@ -44,11 +45,12 @@ describe("searchTransactions", () => {
     expect(ids({})).toEqual(["sub", "pay", "lunch", "refund"]);
   });
 
-  it("キーワードは全角半角・大文字小文字を区別せず、メモと費目名に当てる", () => {
+  it("キーワードは全角半角・大文字小文字を区別せず、メモ・店名・費目名に当てる", () => {
     expect(ids({ keyword: "ａｂｃ" })).toEqual(["lunch"]);
     expect(ids({ keyword: "ｾｷﾞｮｳ" })).toEqual([]);
     expect(ids({ keyword: "subsc" })).toEqual(["sub"]);
     expect(ids({ keyword: "給与" })).toEqual(["pay"]);
+    expect(ids({ keyword: "netflix" })).toEqual(["sub"]);
   });
 
   it("金額は符号を無視せずに比べ、片側だけでも指定できる", () => {

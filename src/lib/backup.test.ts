@@ -5,9 +5,16 @@ import { createBackup, parseBackup } from "./backup";
 /** テスト用のデータ */
 const data = {
   categories: TEST_CATEGORIES,
+  storeRules: [
+    { id: "r", keyword: "AMAZON", categoryId: "food", createdAt: 1 },
+  ],
   transactions: [
     makeTransaction({ id: "a", amount: -300, memo: "返品" }),
     makeTransaction({ id: "b", kind: "income", categoryId: "salary" }),
+    makeTransaction({
+      id: "c",
+      source: { card: "recruit", storeName: "ＡＭＡＺＯＮ．ＣＯ．ＪＰ" },
+    }),
   ],
 };
 
@@ -27,6 +34,13 @@ function tampered(
 describe("backup", () => {
   it("書き出したものをそのまま読み込める", () => {
     expect(parseBackup(createBackup(data, new Date(0)))).toEqual(data);
+  });
+
+  it("店名ルールがない版 1 のバックアップも読み込める", () => {
+    const v1 = tampered((j) => {
+      Object.assign(j, { version: 1, storeRules: undefined });
+    });
+    expect(parseBackup(v1).storeRules).toEqual([]);
   });
 
   it.each([
@@ -55,6 +69,22 @@ describe("backup", () => {
     [
       "費目名が重複",
       tampered((j) => Object.assign(j.categories[1], { name: "食費" })),
+    ],
+    [
+      "カードが不明",
+      tampered((j) =>
+        Object.assign(j.transactions[2], {
+          source: { card: "unknown", storeName: "x" },
+        }),
+      ),
+    ],
+    [
+      "店名ルールの費目が収入",
+      tampered((j) => Object.assign(j.storeRules[0], { categoryId: "salary" })),
+    ],
+    [
+      "版 2 なのに店名ルールの一覧がない",
+      tampered((j) => Object.assign(j, { storeRules: undefined })),
     ],
     [
       "取引の id が重複",

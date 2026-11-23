@@ -1,4 +1,4 @@
-import type { Category, Kind, Transaction } from "./types";
+import type { Category, Kind, Transaction, TransactionSource } from "./types";
 
 /** 入力画面に渡す、編集中の取引 */
 export type TransactionDraft = {
@@ -11,6 +11,8 @@ export type TransactionDraft = {
   /** 未選択なら空文字 */
   categoryId: string;
   memo: string;
+  /** 取り込み元。編集では変えずに残し、新規と複製では null */
+  source: TransactionSource | null;
 };
 
 /**
@@ -27,6 +29,7 @@ export function newDraft(today: string): TransactionDraft {
     amountText: "",
     categoryId: "",
     memo: "",
+    source: null,
   };
 }
 
@@ -44,6 +47,7 @@ export function editDraft(t: Transaction): TransactionDraft {
     amountText: String(t.amount),
     categoryId: t.categoryId,
     memo: t.memo,
+    source: t.source ?? null,
   };
 }
 
@@ -65,6 +69,8 @@ export function duplicateDraft(
     id: null,
     createdAt: null,
     date: today,
+    // カードは支払方法ではないので、複製した取引には引き継がない（ADR 0002）
+    source: null,
     categoryId: category === undefined || category.hidden ? "" : t.categoryId,
   };
 }

@@ -1,12 +1,23 @@
 import { isValidDateString } from "./date";
-import { KINDS } from "./types";
-import type { Category, KakeiboData, Kind, Transaction } from "./types";
+import { CARD_LABEL, KINDS } from "./types";
+import type {
+  CardId,
+  Category,
+  KakeiboData,
+  Kind,
+  StoreRule,
+  Transaction,
+  TransactionSource,
+} from "./types";
 
 /** バックアップファイルの識別子 */
 const BACKUP_FORMAT = "my-kakeibo-backup";
 
 /** バックアップファイルの形式の版。形を変えたら上げる */
-const BACKUP_VERSION = 1;
+const BACKUP_VERSION = 2;
+
+/** 店名ルールと取り込み元がない、読み込みだけ対応する古い版 */
+const BACKUP_VERSION_WITHOUT_RULES = 1;
 
 /**
  * 取引と費目をバックアップ用の JSON 文字列にする。
@@ -22,6 +33,7 @@ export function createBackup(data: KakeiboData, exportedAt: Date): string {
       exportedAt: exportedAt.toISOString(),
       categories: data.categories,
       transactions: data.transactions,
+      storeRules: data.storeRules,
     },
     null,
     2,
@@ -44,6 +56,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  */
 function isKind(value: unknown): value is Kind {
   return KINDS.some((k) => k === value);
+}
+
+/**
+ * 値がカードかを判定する。
+ * @param value 判定する値
+ * @returns {boolean} カードなら true
+ */
+function isCardId(value: unknown): value is CardId {
+  return typeof value === "string" && Object.hasOwn(CARD_LABEL, value);
 }
 
 /**
@@ -73,6 +94,28 @@ function parseCategory(value: unknown, index: number): Category {
     };
   }
   throw new Error(`費目の ${index + 1} 件目の形が正しくありません`);
+}
+
+/**
+ * 取引の取り込み元を検証する。
+ * @param value 読み込んだ値
+ * @param label エラーの文言に使う取引の名前
+ * @returns {TransactionSource | undefined} 検証済みの取り込み元。手入力の取引なら undefined
+ */
+function parseSource(
+  value: unknown,
+  label: string,
+): TransactionSource | undefined {
+  if (value === undefined) return undefined;
+  if (
+    isRecord(value) &&
+    isCardId(value.card) &&
+    typeof value.storeName === "string" &&
+    value.storeName.trim() !== ""
+  ) {
+    return { card: value.card, storeName: value.storeName };
+  }
+  throw new Error(`${label}の取り込み元の形が正しくありません`);
 }
 
 /**
@@ -108,6 +151,7 @@ function parseTransaction(
   if (categories.get(value.categoryId)?.kind !== value.kind) {
     throw new Error(`${label}の費目が見つからないか、種別が合いません`);
   }
+  const source = parseSource(value.source, label);
   return {
     id: value.id,
     kind: value.kind,
@@ -116,6 +160,43 @@ function parseTransaction(
     categoryId: value.categoryId,
     // メモは 1 行で扱う
     memo: value.memo.replace(/[\r\n]+/g, " "),
+    createdAt: value.createdAt,
+    ...(source !== undefined && { source }),
+  };
+}
+
+/**
+ * 1 件の店名ルールを検証する。
+ * @param value 読み込んだ値
+ * @param index 何件目か（エラーの文言用）
+ * @param categories 検証済みの費目（id → 費目）
+ * @returns {StoreRule} 検証済みの店名ルール
+ */
+function parseStoreRule(
+  value: unknown,
+  index: number,
+  categories: Map<string, Category>,
+): StoreRule {
+  const label = `店名ルールの ${index + 1} 件目`;
+  if (
+    !isRecord(value) ||
+    typeof value.id !== "string" ||
+    value.id === "" ||
+    typeof value.keyword !== "string" ||
+    value.keyword.trim() === "" ||
+    typeof value.categoryId !== "string" ||
+    typeof value.createdAt !== "number" ||
+    !Number.isFinite(value.createdAt)
+  ) {
+    throw new Error(`${label}の形が正しくありません`);
+  }
+  if (categories.get(value.categoryId)?.kind !== "expense") {
+    throw new Error(`${label}の費目が見つからないか、支出の費目ではありません`);
+  }
+  return {
+    id: value.id,
+    keyword: value.keyword.trim(),
+    categoryId: value.categoryId,
     createdAt: value.createdAt,
   };
 }
@@ -147,11 +228,20 @@ export function parseBackup(text: string): KakeiboData {
   if (!isRecord(json) || json.format !== BACKUP_FORMAT) {
     throw new Error("家計簿のバックアップファイルではありません");
   }
-  if (json.version !== BACKUP_VERSION) {
+  if (
+    json.version !== BACKUP_VERSION &&
+    json.version !== BACKUP_VERSION_WITHOUT_RULES
+  ) {
     throw new Error("対応していない版のバックアップファイルです");
   }
-  if (!Array.isArray(json.categories) || !Array.isArray(json.transactions)) {
-    throw new Error("費目または取引の一覧がありません");
+  const rawRules =
+    json.version === BACKUP_VERSION_WITHOUT_RULES ? [] : json.storeRules;
+  if (
+    !Array.isArray(json.categories) ||
+    !Array.isArray(json.transactions) ||
+    !Array.isArray(rawRules)
+  ) {
+    throw new Error("費目・取引・店名ルールの一覧がありません");
   }
   const categories = json.categories.map(parseCategory);
   assertUniqueIds(categories, "費目");
@@ -164,5 +254,7 @@ export function parseBackup(text: string): KakeiboData {
     parseTransaction(t, i, byId),
   );
   assertUniqueIds(transactions, "取引");
-  return { categories, transactions };
+  const storeRules = rawRules.map((r, i) => parseStoreRule(r, i, byId));
+  assertUniqueIds(storeRules, "店名ルール");
+  return { categories, transactions, storeRules };
 }

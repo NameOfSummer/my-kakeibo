@@ -97,7 +97,7 @@ export function SearchView({ data, actions }: Props) {
         aria-label="検索条件"
         className="grid grid-cols-6 items-start gap-4 rounded-3xl bg-bg p-6 shadow-card"
       >
-        <Field label="キーワード（メモ・費目名）" className="col-span-2">
+        <Field label="キーワード（メモ・店名・費目名）" className="col-span-2">
           {(p) => (
             <input
               {...p}

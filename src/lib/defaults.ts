@@ -18,13 +18,29 @@ const DEFAULT_NAMES: Record<Kind, readonly string[]> = {
 };
 
 /**
+ * 初期費目の id を作る。
+ * @param kind 種別
+ * @param order 種別の中での順番
+ * @returns {string} id
+ */
+function defaultId(kind: Kind, order: number): string {
+  return `default-${kind}-${order}`;
+}
+
+/** 支出の初期費目「その他」の id。店名ルールに当たらない取り込みに使う */
+export const OTHER_EXPENSE_ID = defaultId(
+  "expense",
+  DEFAULT_NAMES.expense.indexOf("その他"),
+);
+
+/**
  * 初期費目を作る。id は固定にして、二重に登録しても同じ費目に上書きされるようにする。
  * @returns {Category[]} 初期費目
  */
 export function createDefaultCategories(): Category[] {
   return (["expense", "income"] as const).flatMap((kind) =>
     DEFAULT_NAMES[kind].map((name, order) => ({
-      id: `default-${kind}-${order}`,
+      id: defaultId(kind, order),
       kind,
       name,
       hidden: false,

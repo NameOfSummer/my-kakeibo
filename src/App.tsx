@@ -5,8 +5,10 @@ import { BackupView } from "@/components/BackupView";
 import { Button } from "@/components/Button";
 import { CategoryList } from "@/components/CategoryList";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { ImportView } from "@/components/ImportView";
 import { MonthView } from "@/components/MonthView";
 import { SearchView } from "@/components/SearchView";
+import { StoreRuleList } from "@/components/StoreRuleList";
 import { TransactionDialog } from "@/components/TransactionDialog";
 import type { TransactionActions } from "@/components/TransactionList";
 import { useKakeibo } from "@/hooks/useKakeibo";
@@ -22,7 +24,7 @@ const TAB_CLASS =
   "h-9 rounded-full px-5 shadow-raised-sm data-[state=active]:font-bold data-[state=active]:text-blue data-[state=active]:shadow-inset-sm";
 
 /**
- * 家計簿の画面全体。タブで月・検索・費目・バックアップを切り替える。
+ * 家計簿の画面全体。タブで月・検索・費目・取り込み・バックアップを切り替える。
  * @returns {JSX.Element} 画面
  */
 export function App() {
@@ -102,6 +104,9 @@ export function App() {
           <Tabs.Trigger value="categories" className={TAB_CLASS}>
             費目
           </Tabs.Trigger>
+          <Tabs.Trigger value="import" className={TAB_CLASS}>
+            取り込み
+          </Tabs.Trigger>
           <Tabs.Trigger value="backup" className={TAB_CLASS}>
             バックアップ
           </Tabs.Trigger>
@@ -126,6 +131,15 @@ export function App() {
               onSave={kakeibo.saveCategory}
             />
           ))}
+        </Tabs.Content>
+        <Tabs.Content value="import" className="grid gap-8">
+          <ImportView data={data} onImport={kakeibo.addTransactions} />
+          <StoreRuleList
+            storeRules={data.storeRules}
+            categories={data.categories}
+            onSave={kakeibo.saveStoreRule}
+            onRemove={kakeibo.removeStoreRule}
+          />
         </Tabs.Content>
         <Tabs.Content value="backup">
           <BackupView data={data} onReplace={kakeibo.replaceData} />

@@ -192,6 +192,7 @@ describe("App", () => {
     const backup = createBackup(
       {
         categories: TEST_CATEGORIES,
+        storeRules: [],
         transactions: [
           makeTransaction({ date: todayString(), memo: "読み込んだ" }),
         ],
@@ -223,5 +224,52 @@ describe("App", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "バックアップファイルではありません",
     );
+  });
+
+  it("カードの利用明細は店名ルールの費目で取り込み、取り込み済みは飛ばす", async () => {
+    const user = await setup();
+    await user.click(screen.getByRole("tab", { name: "取り込み" }));
+    await user.type(screen.getByLabelText("店名ルールのキーワード"), "amazon");
+    await user.selectOptions(
+      screen.getByLabelText("店名ルールの費目"),
+      "日用品",
+    );
+    await user.click(screen.getByRole("button", { name: "追加" }));
+    expect(await screen.findByLabelText("amazon の費目")).toBeInTheDocument();
+
+    const csv = [
+      '"確定情報","お支払日","ご利用店名（海外ご利用店名／海外都市名）","ご利用者","ご利用日","ご利用金額（円）","現地通貨額・通貨名称・換算レート"',
+      '"確定","2025年10月10日","ＡＭＡＺＯＮ．ＣＯ．ＪＰ","1050","2025年8月16日","5,962",',
+      '"確定","2025年10月10日","ニトリネツト","1050","2025年9月15日","15,380",',
+    ].join("\r\n");
+    const upload = (): Promise<void> =>
+      user.upload(
+        screen.getByLabelText("CSV を選んで取り込む"),
+        new File([csv], "meisai.csv", { type: "text/csv" }),
+      );
+    await upload();
+    expect(
+      await screen.findByLabelText(
+        "2025-08-16 ＡＭＡＺＯＮ．ＣＯ．ＪＰ 5,962円 の費目",
+      ),
+    ).toHaveDisplayValue("日用品");
+    expect(
+      screen.getByLabelText("2025-09-15 ニトリネツト 15,380円 の費目"),
+    ).toHaveDisplayValue("その他");
+    await user.click(screen.getByRole("button", { name: "取り込む" }));
+    expect(await screen.findByText("2 件取り込みました")).toBeInTheDocument();
+
+    await upload();
+    expect(
+      await screen.findByText(/新しく取り込む明細はありません/),
+    ).toHaveTextContent("取り込み済みの 2 件は飛ばしました");
+
+    await user.click(screen.getByRole("tab", { name: "検索" }));
+    await user.type(
+      screen.getByLabelText("キーワード（メモ・店名・費目名）"),
+      "ニトリ",
+    );
+    expect(summary("件数")).toBe("1件");
+    expect(screen.getByText("ニトリネツト")).toBeInTheDocument();
   });
 });
