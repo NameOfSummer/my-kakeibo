@@ -5,7 +5,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { formatYen } from "@/lib/amount";
 import { NUM_CLASS, TABLE_CLASS, TD_CLASS, TH_CLASS } from "@/lib/styles";
-import { KIND_LABEL } from "@/lib/types";
+import { CARD_LABEL, KIND_LABEL } from "@/lib/types";
 import type { Category, Transaction } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "./Button";
@@ -49,6 +49,7 @@ export function TransactionList({
           <th className={TH_CLASS}>種別</th>
           <th className={TH_CLASS}>費目</th>
           <th className={cn(TH_CLASS, NUM_CLASS)}>金額</th>
+          <th className={TH_CLASS}>店名</th>
           <th className={TH_CLASS}>メモ</th>
           <th className={TH_CLASS}>
             <span className="sr-only">操作</span>
@@ -79,6 +80,16 @@ export function TransactionList({
                 )}
               >
                 {formatYen(t.amount)}
+              </td>
+              <td className={cn(TD_CLASS, "max-w-48 truncate")}>
+                {t.source !== undefined && (
+                  <>
+                    {t.source.storeName}
+                    <span className="ml-1 text-xs text-faint">
+                      （{CARD_LABEL[t.source.card]}）
+                    </span>
+                  </>
+                )}
               </td>
               <td className={cn(TD_CLASS, "max-w-64 truncate")}>{t.memo}</td>
               <td className={cn(TD_CLASS, "whitespace-nowrap text-right")}>

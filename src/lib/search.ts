@@ -54,6 +54,7 @@ export function searchTransactions(
       (t) =>
         (keyword === "" ||
           normalizeText(t.memo).includes(keyword) ||
+          normalizeText(t.source?.storeName ?? "").includes(keyword) ||
           (names.get(t.categoryId) ?? "").includes(keyword)) &&
         // 符号は無視せず、入力した値のまま比べる
         (minAmount === null || t.amount >= minAmount) &&

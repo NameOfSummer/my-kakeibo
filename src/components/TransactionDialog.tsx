@@ -6,7 +6,7 @@ import { parseAmount } from "@/lib/amount";
 import { isValidDateString } from "@/lib/date";
 import type { TransactionDraft } from "@/lib/draft";
 import { FIELD_CLASS } from "@/lib/styles";
-import { KIND_LABEL, KINDS } from "@/lib/types";
+import { CARD_LABEL, KIND_LABEL, KINDS } from "@/lib/types";
 import type { Category, Kind, Transaction } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "./Button";
@@ -87,6 +87,7 @@ export function TransactionDialog({
       amount,
       categoryId,
       memo: memo.trim(),
+      ...(draft.source !== null && { source: draft.source }),
     });
     if (isSaved) onClose();
     else setIsSaving(false);
@@ -108,6 +109,12 @@ export function TransactionDialog({
           <Dialog.Title className="font-heading text-base font-bold">
             {draft.id === null ? "取引を追加" : "取引を編集"}
           </Dialog.Title>
+          {draft.source !== null && (
+            <p className="mt-2 text-xs text-sub">
+              {CARD_LABEL[draft.source.card]}から取り込んだ取引（店名:{" "}
+              {draft.source.storeName}）
+            </p>
+          )}
           <form className="mt-4 grid gap-4" onSubmit={submit} noValidate>
             <fieldset className="flex gap-2">
               <legend className="mb-1 text-xs text-sub">種別</legend>

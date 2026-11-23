@@ -15,6 +15,7 @@ type Props = {
 
 /**
  * バックアップ画面。JSON への書き出しと、確認したうえでの全件置き換えの読み込み。
+ * 店名ルールもバックアップに含める。
  * @param props 今のデータと置き換えの処理
  * @returns {JSX.Element} バックアップ画面
  */
@@ -79,8 +80,9 @@ export function BackupView({ data, onReplace }: Props) {
       <section className="rounded-3xl bg-bg p-6 shadow-card">
         <h3 className="mb-2 font-heading font-bold">書き出し</h3>
         <p className="mb-4 text-sub">
-          取引 {data.transactions.length} 件と費目 {data.categories.length} 件を
-          JSON ファイルに保存します。
+          取引 {data.transactions.length} 件・費目 {data.categories.length}{" "}
+          件・店名ルール {data.storeRules.length} 件を JSON
+          ファイルに保存します。
         </p>
         <Button variant="primary" onClick={download}>
           JSON を書き出す
@@ -112,7 +114,7 @@ export function BackupView({ data, onReplace }: Props) {
       {pending !== null && (
         <ConfirmDialog
           title="データを置き換えますか？"
-          description={`今の取引 ${data.transactions.length} 件と費目 ${data.categories.length} 件はすべて消え、ファイルの取引 ${pending.transactions.length} 件と費目 ${pending.categories.length} 件に置き換わります。\nこの操作は元に戻せません。`}
+          description={`今の取引 ${data.transactions.length} 件・費目 ${data.categories.length} 件・店名ルール ${data.storeRules.length} 件はすべて消え、ファイルの取引 ${pending.transactions.length} 件・費目 ${pending.categories.length} 件・店名ルール ${pending.storeRules.length} 件に置き換わります。\nこの操作は元に戻せません。`}
           confirmLabel="置き換える"
           onConfirm={() => void replace(pending)}
           onCancel={() => setPending(null)}
